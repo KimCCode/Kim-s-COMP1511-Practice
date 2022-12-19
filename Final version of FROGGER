@@ -1,0 +1,351 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+
+
+#define SIZE 9
+#define TRUE 1
+#define FALSE 0
+
+enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
+
+struct board_tile {
+    enum tile_type type;
+    int occupied;
+    int bug; 
+};
+
+void print_board(struct board_tile board[SIZE][SIZE]);
+
+int main() {
+    struct board_tile game_board[SIZE][SIZE];
+    char command;
+    int i, j, a, a1, b, c, turtles, d, turtle_row, turtle_column,
+    log_row, log_start, log_end, l, clear_row, h, remove_row,
+    remove_column, z, turtle_check, frogger_check, f, y, v, 
+    curr_row, curr_col, m, n, life = 3, bug_row, bug_col, move_count = 0,
+    left = 0, status;
+    
+    // Set up mode
+    for (i = 0; i < 9; i++) { 
+        if (i == 0) { // Water + lily pads
+            for (a = 0; a < 9; a+=2) {
+                game_board[i][a].type = LILLYPAD;
+                game_board[i][a].occupied = 0;
+                game_board[i][a].bug = 0;
+
+            }
+            for (a1 = 1; a1 < 9; a1+=2) {
+                game_board[i][a1].type = WATER;
+                game_board[i][a1].occupied = 0;
+                game_board[i][a1].bug = 0;
+            }
+        }
+        
+        else if(i == 8){ // Bank
+            for (b = 0; b < 9; b++) {
+                if (b == 4) {
+                    game_board[i][b].type = BANK;
+                    game_board[i][b].occupied = 1;
+                    game_board[i][b].bug = 0;
+                }
+                else {
+                    game_board[i][b].type = BANK;
+                    game_board[i][b].occupied = 0;
+                    game_board[i][b].bug = 0;
+                }
+            }
+        }
+        
+        else { // Water
+            for (c = 0; c < 9; c++) {
+                game_board[i][c].type = WATER;
+                game_board[i][c].occupied = 0;
+                game_board[i][c].bug = 0;
+            } 
+        }
+    }
+
+    printf("\nWelcome to CSE Frogger!\nHow many turtles? ");
+    scanf("%d", &turtles); // Ask user for turtles to be added
+    
+    printf("Enter pairs:\n");
+    for (d = 0; d < turtles; d++){
+        scanf("%d %d", &turtle_row, &turtle_column);
+        if (turtle_row > 0 && turtle_row < 8 && turtle_column >= 0 && turtle_column <= 8) {
+            game_board[turtle_row][turtle_column].type = TURTLE;
+            game_board[turtle_row][turtle_column].occupied = 0;
+        }   
+        else {
+            continue;
+        }
+    }
+
+    printf("Game started\n");
+    print_board(game_board);
+
+    // Command mode
+    do {
+        printf("\nEnter command: ");
+        scanf(" %c", &command);
+        switch (command) { 
+            case 'l':
+                scanf(" %d %d %d", &log_row, &log_start, &log_end); 
+                turtle_check = 1;
+                for (z = 0; z < 9; z++) {
+                    if (game_board[log_row][z].type == TURTLE) { 
+                        turtle_check = 0;
+                    }
+                }
+                if (log_row > 0 && log_row < 8 && log_start >= 0 &&
+                log_start <= 8 && log_end >= 0 && log_end <= 8 && 
+                log_start <= log_end && turtle_check == 1) {
+                    for (l = log_start; l <= log_end; l++) {
+                        game_board[log_row][l].type = LOG;
+                        game_board[log_row][l].occupied = 0;
+                    } 
+                }       
+                break;
+
+            case 'c':
+                scanf(" %d", &clear_row);
+                frogger_check = 1;
+                for (f = 0; f < 9; f++) {
+                    if (game_board[clear_row][f].occupied) {
+                        frogger_check = 0;
+                    }
+                }
+
+                if (clear_row > 0 && clear_row < 8 && frogger_check == 1) {
+                    for (h = 0; h < 9; h++) {
+                        game_board[clear_row][h].type = WATER;
+                        game_board[clear_row][h].occupied = 0;
+                        game_board[clear_row][h].bug = 0;
+                    }
+                }
+                break;
+
+            case 'r':
+                scanf(" %d %d", &remove_row, &remove_column);
+                if (game_board[remove_row][remove_column].type == LOG && game_board[remove_row][remove_column].occupied == 0) { // Frogger can't also be on adjacent logs
+                    for (v = remove_column - 1; v <= remove_column + 1; v++) {
+                        game_board[remove_row][v].type = WATER;
+                        if (game_board[remove_row][v].type == LOG) {
+                            game_board[remove_row][v].type = WATER;
+                        }
+                    }
+                    /*
+                    for (v = 0; v < 9; v++) {  // Checks if element to left and right of chosen coordinate is a log
+                        if (game_board[remove_row][remove_column+v].type == LOG) {
+                            game_board[remove_row][remove_column+v].type = WATER;
+                            break;
+                        }
+                    }
+                    for (y = 0; y < 9; y++) {  // Checks if element to left and right of chosen coordinate is a log
+                        if (game_board[remove_row][remove_column-y].type == LOG) {
+                            game_board[remove_row][remove_column-y].type = WATER; // what happens if it reaches first and last column?
+                            break;
+                        }
+                    }
+                    */
+                }
+                break;
+
+            case 'w':  
+                move_count = 1;
+                for (m = 0; m < 9; m++) { // Keeps track of what tile frogger is on
+                    for (n = 0; n < 9; n++) {
+                        if (game_board[m][n].occupied == 1) {
+                            curr_row = m;
+                            curr_col = n;
+                        }
+                    }
+                }
+                if (curr_row != 0) {
+                    game_board[curr_row-1][curr_col].occupied = 1;
+                    game_board[curr_row][curr_col].occupied = 0;
+                    printf("Frogger's current position %d %d\n", curr_row-1, curr_col);
+                }
+                break;
+
+            case 'a':
+                move_count = 1;
+                for (m = 0; m < 9; m++) {
+                    for (n = 0; n < 9; n++) {
+                        if (game_board[m][n].occupied == 1) {
+                            curr_row = m;
+                            curr_col = n;
+                        }
+                    }
+                }
+                if (curr_col != 0) {
+                    game_board[curr_row][curr_col-1].occupied = 1;
+                    game_board[curr_row][curr_col].occupied = 0;
+                    printf("Frogger's current position %d %d\n", curr_row, curr_col-1);
+
+                }
+                break;
+
+            case 'd':
+                move_count = 1;
+                for (m = 0; m < 9; m++) {
+                    for (n = 0; n < 9; n++) {
+                        if (game_board[m][n].occupied == 1) {
+                            curr_row = m;
+                            curr_col = n;
+                        }
+                    }
+                }
+                if (curr_col != 8) {
+                    game_board[curr_row][curr_col+1].occupied = 1;
+                    game_board[curr_row][curr_col].occupied = 0;
+                    printf("Frogger's current position %d %d\n", curr_row, curr_col+1);
+                }                        
+                break;
+
+            case 's':
+                move_count = 1;
+                for (m = 0; m < 9; m++) {
+                    for (n = 0; n < 9; n++) {
+                        if (game_board[m][n].occupied == 1) {
+                            curr_row = m;
+                            curr_col = n;
+                        }
+                    }
+                }
+                if (curr_row != 8) {
+                    game_board[curr_row+1][curr_col].occupied = 1;
+                    game_board[curr_row][curr_col].occupied = 0;
+                    printf("Frogger's current position %d %d\n", curr_row+1, curr_col);
+                }
+                break;  
+
+            case 'b': //bugs
+                scanf(" %d %d", &bug_row, &bug_col);
+                if ((game_board[bug_row][bug_col].type == TURTLE || game_board[bug_row][bug_col].type == LOG) &&
+                game_board[bug_row][bug_col].type != BANK && game_board[bug_row][bug_col].occupied == 0 &&
+                game_board[bug_row][bug_col].bug == 0 && bug_col >= 0 && bug_col <= 8) {
+                    game_board[bug_row][bug_col].bug = 1;
+                }
+                break;
+
+// Moving the board
+                
+            case 'g':
+                scanf(" %d", &status);
+                if (status == 1) { // Game mode on
+                    printf("\n\n### GAME MODE ACTIVATED ###\n\n");
+                    print_board(game_board);
+                }
+
+            case 'q':
+                return 0;   
+        }
+        print_board(game_board);
+        
+        for (m = 0; m < 9; m++) { // CRUCIAL -> gives correct location in array of frogger as it changed before
+            for (n = 0; n < 9; n++) {
+                if (game_board[m][n].occupied == 1) {
+                    curr_row = m;
+                    curr_col = n;
+                }
+            }
+        }
+
+        if (game_board[curr_row][curr_col].occupied == 1 && game_board[curr_row][curr_col].type == LILLYPAD) {
+            printf("\nWahoo!! You Won!\n\n");
+            break;
+        }
+        else if (game_board[curr_row][curr_col].occupied == 1 && (game_board[curr_row][curr_col].type == WATER
+        || game_board[curr_row][curr_col].bug == 1)) {
+            life = life - 1;
+            if (life == 0) {
+                printf("\n\n!! GAME OVER !!");
+                break;
+            }
+            else {
+            printf("\n\n# LIVES LEFT: %d #\n\n", life);
+            game_board[curr_row][curr_col].occupied = 0;
+            game_board[8][4].occupied = 1;
+            print_board(game_board);
+            }
+        }
+
+                // Moving frogger // 
+        /* ISSUES: 
+        1. Bug doesn't move on my first move 
+        
+        */
+        if (move_count == 1) { 
+            for (i = 0; i < 9; i++) {
+                for (j = 0; j < 9; j++) {
+                    if (game_board[i][j].bug == 1 && left == 0) { // move right
+                        if (j == 8) {
+                            game_board[i][j-1].bug = 1;
+                            game_board[i][j].bug = 0;
+                            left = 1;
+                            break;
+                        }
+                        else { 
+                            game_board[i][j+1].bug = 1;
+                            game_board[i][j].bug = 0;
+                            break;
+                        }
+                        break;
+                    }
+                    else if (game_board[i][j].bug == 1 && left == 1) { // move left
+                        if (j == 0) {
+                            game_board[i][j+1].bug = 1;
+                            game_board[i][j].bug = 0;
+                            left = 0;
+                            break;
+                        }
+                        else { 
+                            game_board[i][j-1].bug = 1;
+                            game_board[i][j].bug = 0;
+                            break;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    } while (status == 1);
+    printf("\n\nThank you for playing CSE Frogger!");
+    return 0;
+}
+
+void print_board(struct board_tile board[SIZE][SIZE]) {
+    for (int row = 0; row < SIZE; row++) { 
+        for (int col = 0; col < SIZE; col++) {
+            char type_char;
+            if (board[row][col].occupied) {
+                type_char = 'F';
+            }
+            else if (board[row][col].bug) {
+                type_char = 'B';
+            }
+            else {
+                enum tile_type type = board[row][col].type;
+                if (type == LILLYPAD) {
+                    type_char = 'o';
+                }
+                else if (type == BANK) {
+                    type_char = 'x';
+                }
+                else if (type == TURTLE) {
+                    type_char = 'T';
+                }
+                else if (type == LOG) {
+                    type_char = 'L';
+                }
+                else if (type == WATER) {
+                    type_char = '~';
+                }
+            }
+            printf("%c ", type_char);
+        }
+        printf("\n");
+    }
+}
