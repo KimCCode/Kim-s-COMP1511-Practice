@@ -116,7 +116,7 @@ int main() {
             }
         } 
 
-                    // Moving frogger // Doesn't turn at end of log.
+                    // Moving frogger // 
 
         else if (command == 'w' || command == 'a' || command == 's' || command == 'd') { 
             switch (command) {
@@ -156,6 +156,9 @@ int main() {
                 }   
                 break;
             } // End of switch statement
+            
+                   // Moving bugs //
+                   
             for (g = 0; g < 9; g++) {
                 for (j = 0; j < 9; j++) {
                     if (left == 0 && game_board[g][j].bug == 1) {
